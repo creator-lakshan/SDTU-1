@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDTU</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --green: #0a7d2c;
+      --red: #c4161c;
+      --dark: #17231b;
+      --border: #dfe5e1;
+      --muted: #68756d;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(
+        135deg,
+        #0a7d2c 0%,
+        #0a7d2c 50%,
+        #c4161c 50%,
+        #c4161c 100%
+      );
+      padding: 24px 14px 40px;
+      color: var(--dark);
+    }
+
+    .container {
+      width: min(1100px, 100%);
+      margin: auto;
+    }
+
+    .hero {
+      color: white;
+      text-align: center;
+      padding: 12px 10px 22px;
+    }
+
+    .hero h1 {
+      margin: 0 0 7px;
+      font-size: clamp(28px, 5vw, 40px);
+    }
+
+    .hero p {
+      margin: 0;
+      opacity: .92;
+      font-size: 14px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 12px 35px rgba(0,0,0,.16);
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      margin: 0 0 18px;
+      font-size: 21px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    label {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 14px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(10,125,44,.12);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--green);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #edf1ee;
+      color: #243129;
+    }
+
+    .btn-excel {
+      background: #177245;
+      color: white;
+    }
+
+    .btn-edit {
+      background: #f0a000;
+      color: white;
+      padding: 8px 11px;
+    }
+
+    .btn-delete {
+      background: var(--red);
+      color: white;
+      padding: 8px 11px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 750px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 13px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background: #f3f6f4;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 30px 15px;
+    }
+
+    .count {
+      color: var(--muted);
+      font-size: 13px;
+      margin: -10px 0 16px;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 13px;
+      min-height: 18px;
+    }
+
+    .status.success {
+      color: var(--green);
+    }
+
+    .status.error {
+      color: var(--red);
+    }
+
+    /* Password Popup */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0,0,0,.55);
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-box {
+      width: min(390px, 100%);
+      background: white;
+      border-radius: 17px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    }
+
+    .modal-box h2 {
+      margin: 0 0 8px;
+      font-size: 21px;
+    }
+
+    .modal-box p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 9px;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+
+    .error {
+      color: var(--red);
+      font-size: 13px;
+      min-height: 18px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 650px) {
+      body {
+        padding: 12px 10px 30px;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .actions button {
+        flex: 1 1 130px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <!-- HEADER -->
+    <header class="hero">
+      <h1>SDTU</h1>
+      <p>Secure Data Entry Management System</p>
+    </header>
+
+    <!-- FORM CARD -->
+    <section class="card">
+
+      <h2 class="section-title" id="formTitle">
+        Enter Details / விவரங்களை உள்ளிடவும்
+      </h2>
+
+      <form id="entryForm" autocomplete="off">
+
+        <div class="form-grid">
+
+          <!-- NAME -->
+          <div class="field">
+            <label for="name">
+              Name / பெயர் *
+            </label>
+
+            <input
+              id="name"
+              name="name"
+              type="text"
+              maxlength="100"
+              required
+            >
+          </div>
+
+          <!-- APPLICATION NUMBER -->
+          <div class="field">
+            <label for="applicationNumber">
+              Application Number / விண்ணப்ப எண் *
+            </label>
+
+            <input
+              id="applicationNumber"
+              name="applicationNumber"
+              type="text"
+              maxlength="60"
+              required
+            >
+          </div>
+
+          <!-- MOBILE -->
+          <div class="field">
+            <label for="mobile">
+              Mobile Number / கைபேசி எண் *
+            </label>
+
+            <input
+              id="mobile"
+              name="mobile"
+              type="tel"
+              inputmode="numeric"
+              maxlength="20"
+              pattern="[0-9+\-\s()]{7,20}"
+              required
+            >
+          </div>
+
+          <!-- WORK -->
+          <div class="field">
+            <label for="work">
+              Work / வேலை *
+            </label>
+
+            <input
+              id="work"
+              name="work"
+              type="text"
+              maxlength="150"
+              required
+            >
+          </div>
+
+        </div>
+
+        <div class="actions">
+
+          <button
+            class="btn-primary"
+            type="submit"
+            id="saveButton">
+            Save / சேமிக்க
+          </button>
+
+          <button
+            class="btn-secondary"
+            type="button"
+            id="cancelButton"
+            style="display:none;">
+            Cancel / ரத்து
+          </button>
+
+        </div>
+
+        <div
+          id="status"
+          class="status"
+          aria-live="polite">
+        </div>
+
+      </form>
+
+    </section>
+
+    <!-- TABLE CARD -->
+    <section class="card">
+
+      <h2 class="section-title">
+        Saved Entries / சேமிக்கப்பட்ட விவரங்கள்
+      </h2>
+
+      <div
+        class="count"
+        id="entryCount">
+        0 entries
+      </div>
+
+      <div
+        class="actions"
+        style="margin-top:0; margin-bottom:16px;">
+
+        <button
+          class="btn-excel"
+          type="button"
+          id="downloadButton">
+          Download Excel / Excel பதிவிறக்கம்
+        </button>
+
+      </div>
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>S.No / வரிசை எண்</th>
+
+              <th>
+                Name / பெயர்
+              </th>
+
+              <th>
+                Application Number / விண்ணப்ப எண்
+              </th>
+
+              <th>
+                Mobile Number / கைபேசி எண்
+              </th>
+
+              <th>
+                Work / வேலை
+              </th>
+
+              <th>
+                Actions / செயல்கள்
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="entryTableBody">
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </div>
+
+
+  <!-- PASSWORD POPUP -->
+
+  <div
+    class="modal"
+    id="passwordModal"
+    role="dialog"
+    aria-modal="true">
+
+    <div class="modal-box">
+
+      <h2>
+        Admin Verification
+      </h2>
+
+      <p>
+        Enter admin password to continue.
+      </p>
+
+      <form id="passwordForm">
+
+        <input
+          id="adminPassword"
+          type="password"
+          placeholder="Admin Password"
+          autocomplete="current-password"
+          required
+        >
+
+        <div
+          class="error"
+          id="passwordError">
+        </div>
+
+        <div class="modal-actions">
+
+          <button
+            type="button"
+            class="btn-secondary"
+            id="passwordCancel">
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="btn-primary">
+            Verify
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <script>
+
+    "use strict";
+
+
+    /* ================================
+       SETTINGS
+    ================================= */
+
+    const ADMIN_PASSWORD = "SDTU";
+
+    const STORAGE_KEY = "sdtu_data_entries";
+
+
+    let entries = [];
+
+    let editIndex = null;
+
+    let pendingAction = null;
+
+
+    /* ================================
+       ELEMENTS
+    ================================= */
+
+    const form =
+      document.getElementById("entryForm");
+
+    const nameInput =
+      document.getElementById("name");
+
+    const appInput =
+      document.getElementById("applicationNumber");
+
+    const mobileInput =
+      document.getElementById("mobile");
+
+    const workInput =
+      document.getElementById("work");
+
+    const saveButton =
+      document.getElementById("saveButton");
+
+    const cancelButton =
+      document.getElementById("cancelButton");
+
+    const formTitle =
+      document.getElementById("formTitle");
+
+    const tableBody =
+      document.getElementById("entryTableBody");
+
+    const entryCount =
+      document.getElementById("entryCount");
+
+    const status =
+      document.getElementById("status");
+
+    const passwordModal =
+      document.getElementById("passwordModal");
+
+    const passwordForm =
+      document.getElementById("passwordForm");
+
+    const adminPassword =
+      document.getElementById("adminPassword");
+
+    const passwordError =
+      document.getElementById("passwordError");
+
+    const passwordCancel =
+      document.getElementById("passwordCancel");
+
+
+    /* ================================
+       LOAD DATA
+    ================================= */
+
+    function loadEntries() {
+
+      try {
+
+        const saved =
+          localStorage.getItem(STORAGE_KEY);
+
+        entries =
+          saved ? JSON.parse(saved) : [];
+
+        if (!Array.isArray(entries)) {
+          entries = [];
+        }
+
+      } catch (error) {
+
+        entries = [];
+
+        showStatus(
+          "Unable to load saved data.",
+          true
+        );
+
+      }
+
+      renderTable();
+    }
+
+
+    /* ================================
+       SAVE TO LOCAL STORAGE
+    ================================= */
+
+    function saveToStorage() {
+
+      try {
+
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(entries)
+        );
+
+        return true;
+
+      } catch (error) {
+
+        showStatus(
+          "Unable to save data.",
+          true
+        );
+
+        return false;
+      }
+    }
+
+
+    /* ================================
+       HTML ESCAPE
+    ================================= */
+
+    function escapeHTML(value) {
+
+      return String(value)
+
+        .replace(/&/g, "&amp;")
+
+        .replace(/</g, "&lt;")
+
+        .replace(/>/g, "&gt;")
+
+        .replace(/"/g, "&quot;")
+
+        .replace(/'/g, "&#039;");
+    }
+
+
+    /* ================================
+       DISPLAY TABLE
+    ================================= */
+
+    function renderTable() {
+
+      tableBody.innerHTML = "";
+
+      entryCount.textContent =
+        entries.length +
+        (entries.length === 1
+          ? " entry"
+          : " entries");
+
+
+      if (entries.length === 0) {
+
+        const row =
+          document.createElement("tr");
+
+        row.innerHTML =
+          '<td colspan="6" class="empty">' +
+          'No entries saved yet / பதிவுகள் இல்லை' +
+          '</td>';
+
+        tableBody.appendChild(row);
+
+        return;
+      }
+
+
+      entries.forEach(
+        (entry, index) => {
+
+          const row =
+            document.createElement("tr");
+
+
+          row.innerHTML = `
+
+            <td>
+              ${index + 1}
+            </td>
+
+            <td>
+              ${escapeHTML(entry.name)}
+            </td>
+
+            <td>
+              ${escapeHTML(entry.applicationNumber)}
+            </td>
+
+            <td>
+              ${escapeHTML(entry.mobile)}
+            </td>
+
+            <td>
+              ${escapeHTML(entry.work)}
+            </td>
+
+            <td>
+
+              <button
+                type="button"
+                class="btn-edit"
+                data-action="edit"
+                data-index="${index}">
+                Edit
+              </button>
+
+              <button
+                type="button"
+                class="btn-delete"
+                data-action="delete"
+                data-index="${index}">
+                Delete
+              </button>
+
+            </td>
+
+          `;
+
+          tableBody.appendChild(row);
+
+        }
+      );
+    }
+
+
+    /* ================================
+       STATUS MESSAGE
+    ================================= */
+
+    function showStatus(
+      message,
+      isError = false
+    ) {
+
+      status.textContent = message;
+
+      status.className =
+        "status " +
+        (isError
+          ? "error"
+          : "success");
+
+
+      setTimeout(() => {
+
+        if (status.textContent === message) {
+
+          status.textContent = "";
+
+          status.className = "status";
+        }
+
+      }, 3500);
+    }
+
+
+    /* ================================
+       CLEAR FORM
+    ================================= */
+
+    function clearForm() {
+
+      form.reset();
+
+      editIndex = null;
+
+      formTitle.textContent =
+        "Enter Details / விவரங்களை உள்ளிடவும்";
+
+      saveButton.textContent =
+        "Save / சேமிக்க";
+
+      cancelButton.style.display =
+        "none";
+
+      nameInput.focus();
+    }
+
+
+    /* ================================
+       PASSWORD POPUP
+    ================================= */
+
+    function requestPassword(action) {
+
+      pendingAction = action;
+
+      passwordError.textContent = "";
+
+      adminPassword.value = "";
+
+      passwordModal.classList.add("show");
+
+      setTimeout(
+        () => adminPassword.focus(),
+        50
+      );
+    }
+
+
+    function closePasswordModal() {
+
+      passwordModal.classList.remove("show");
+
+      pendingAction = null;
+
+      adminPassword.value = "";
+
+      passwordError.textContent = "";
+    }
+
+
+    /* ================================
+       GET FORM DATA
+    ================================= */
+
+    function getFormData() {
+
+      return {
+
+        name:
+          nameInput.value.trim(),
+
+        applicationNumber:
+          appInput.value.trim(),
+
+        mobile:
+          mobileInput.value.trim(),
+
+        work:
+          workInput.value.trim()
+
+      };
+    }
+
+
+    /* ================================
+       SAVE / UPDATE
+    ================================= */
+
+    function performSaveOrUpdate() {
+
+      const data =
+        getFormData();
+
+
+      if (
+        !data.name ||
+        !data.applicationNumber ||
+        !data.mobile ||
+        !data.work
+      ) {
+
+        showStatus(
+          "Please fill all fields.",
+          true
+        );
+
+        return;
+      }
+
+
+      if (editIndex === null) {
+
+        entries.push(data);
+
+        if (!saveToStorage()) {
+          return;
+        }
+
+        renderTable();
+
+        clearForm();
+
+        showStatus(
+          "Entry saved successfully."
+        );
+
+      } else {
+
+        entries[editIndex] =
+          data;
+
+        if (!saveToStorage()) {
+          return;
+        }
+
+        renderTable();
+
+        clearForm();
+
+        showStatus(
+          "Entry updated successfully."
+        );
+      }
+    }
+
+
+    /* ================================
+       EDIT ENTRY
+    ================================= */
+
+    function startEdit(index) {
+
+      if (!entries[index]) {
+        return;
+      }
+
+
+      editIndex = index;
+
+      const entry =
+        entries[index];
+
+
+      nameInput.value =
+        entry.name;
+
+      appInput.value =
+        entry.applicationNumber;
+
+      mobileInput.value =
+        entry.mobile;
+
+      workInput.value =
+        entry.work;
+
+
+      formTitle.textContent =
+        "Edit Entry / பதிவை திருத்தவும்";
+
+      saveButton.textContent =
+        "Update / புதுப்பிக்க";
+
+      cancelButton.style.display =
+        "inline-block";
+
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+
+      nameInput.focus();
+    }
+
+
+    /* ================================
+       DELETE ENTRY
+    ================================= */
+
+    function deleteEntry(index) {
+
+      if (!entries[index]) {
+        return;
+      }
+
+
+      entries.splice(index, 1);
+
+
+      if (!saveToStorage()) {
+        return;
+      }
+
+
+      if (editIndex === index) {
+
+        clearForm();
+
+      } else if (
+        editIndex !== null &&
+        index < editIndex
+      ) {
+
+        editIndex--;
+      }
+
+
+      renderTable();
+
+      showStatus(
+        "Entry deleted successfully."
+      );
+    }
+
+
+    /* ================================
+       FORM SUBMIT
+    ================================= */
+
+    form.addEventListener(
+      "submit",
+      function(event) {
+
+        event.preventDefault();
+
+
+        if (!form.checkValidity()) {
+
+          form.reportValidity();
+
+          return;
+        }
+
+
+        requestPassword(
+          editIndex === null
+            ? "save"
+            : "update"
+        );
+
+      }
+    );
+
+
+    /* ================================
+       CANCEL EDIT
+    ================================= */
+
+    cancelButton.addEventListener(
+      "click",
+      function() {
+
+        clearForm();
+
+        showStatus(
+          "Edit cancelled."
+        );
+
+      }
+    );
+
+
+    /* ================================
+       TABLE BUTTONS
+    ================================= */
+
+    tableBody.addEventListener(
+      "click",
+      function(event) {
+
+        const button =
+          event.target.closest(
+            "button[data-action]"
+          );
+
+        if (!button) {
+          return;
+        }
+
+
+        const index =
+          Number(button.dataset.index);
+
+        const action =
+          button.dataset.action;
+
+
+        requestPassword({
+
+          type: action,
+
+          index: index
+
+        });
+
+      }
+    );
+
+
+    /* ================================
+       PASSWORD VERIFY
+    ================================= */
+
+    passwordForm.addEventListener(
+      "submit",
+      function(event) {
+
+        event.preventDefault();
+
+
+        if (
+          adminPassword.value !==
+          ADMIN_PASSWORD
+        ) {
+
+          passwordError.textContent =
+            "Wrong password. Action blocked.";
+
+          adminPassword.select();
+
+          return;
+        }
+
+
+        const action =
+          pendingAction;
+
+
+        closePasswordModal();
+
+
+        if (
+          action === "save" ||
+          action === "update"
+        ) {
+
+          performSaveOrUpdate();
+
+        } else if (
+          action &&
+          action.type === "edit"
+        ) {
+
+          startEdit(action.index);
+
+        } else if (
+          action &&
+          action.type === "delete"
+        ) {
+
+          deleteEntry(action.index);
+        }
+
+      }
+    );
+
+
+    /* ================================
+       CANCEL PASSWORD
+    ================================= */
+
+    passwordCancel.addEventListener(
+      "click",
+      closePasswordModal
+    );
+
+
+    passwordModal.addEventListener(
+      "click",
+      function(event) {
+
+        if (
+          event.target ===
+          passwordModal
+        ) {
+
+          closePasswordModal();
+        }
+
+      }
+    );
+
+
+    /* ================================
+       ESCAPE KEY
+    ================================= */
+
+    document.addEventListener(
+      "keydown",
+      function(event) {
+
+        if (
+          event.key === "Escape" &&
+          passwordModal.classList.contains(
+            "show"
+          )
+        ) {
+
+          closePasswordModal();
+        }
+
+      }
+    );
+
+
+    /* ================================
+       EXCEL DOWNLOAD
+    ================================= */
+
+    document
+      .getElementById("downloadButton")
+      .addEventListener(
+        "click",
+        function() {
+
+          if (entries.length === 0) {
+
+            showStatus(
+              "No entries to export.",
+              true
+            );
+
+            return;
+          }
+
+
+          /*
+            SheetJS available
+          */
+
+          if (
+            typeof XLSX !==
+            "undefined"
+          ) {
+
+            const exportData =
+              entries.map(
+                (entry, index) => ({
+
+                  "S.No":
+                    index + 1,
+
+                  "Name / பெயர்":
+                    entry.name,
+
+                  "Application Number / விண்ணப்ப எண்":
+                    entry.applicationNumber,
+
+                  "Mobile Number / கைபேசி எண்":
+                    entry.mobile,
+
+                  "Work / வேலை":
+                    entry.work
+
+                })
+              );
+
+
+            const worksheet =
+              XLSX.utils.json_to_sheet(
+                exportData
+              );
+
+
+            const workbook =
+              XLSX.utils.book_new();
+
+
+            XLSX.utils.book_append_sheet(
+              workbook,
+              worksheet,
+              "SDTU Data"
+            );
+
+
+            XLSX.writeFile(
+              workbook,
+              "data-entries.xlsx"
+            );
+
+
+            showStatus(
+              "Excel file downloaded."
+            );
+
+
+          } else {
+
+            /*
+              Offline CSV fallback
+            */
+
+            const header = [
+
+              "S.No",
+
+              "Name / பெயர்",
+
+              "Application Number / விண்ணப்ப எண்",
+
+              "Mobile Number / கைபேசி எண்",
+
+              "Work / வேலை"
+
+            ];
+
+
+            const rows =
+              [header];
+
+
+            entries.forEach(
+              (entry, index) => {
+
+                rows.push([
+
+                  index + 1,
+
+                  entry.name,
+
+                  entry.applicationNumber,
+
+                  entry.mobile,
+
+                  entry.work
+
+                ]);
+
+              }
+            );
+
+
+            const csv =
+              rows
+                .map(
+                  row =>
+                    row
+                      .map(
+                        value =>
+                          `"${String(value)
+                            .replace(
+                              /"/g,
+                              '""'
+                            )}"`
+                      )
+                      .join(",")
+                )
+                .join("\r\n");
+
+
+            const blob =
+              new Blob(
+                ["\uFEFF" + csv],
+                {
+                  type:
+                    "text/csv;charset=utf-8;"
+                }
+              );
+
+
+            const url =
+              URL.createObjectURL(
+                blob
+              );
+
+
+            const link =
+              document.createElement(
+                "a"
+              );
+
+
+            link.href = url;
+
+            link.download =
+              "data-entries.csv";
+
+
+            document.body.appendChild(
+              link
+            );
+
+            link.click();
+
+            link.remove();
+
+
+            URL.revokeObjectURL(
+              url
+            );
+
+
+            showStatus(
+              "Downloaded as CSV."
+            );
+
+          }
+
+        }
+      );
+
+
+    /* ================================
+       INITIAL LOAD
+    ================================= */
+
+    loadEntries();
+
+  </script>
+
+</body>
+</html>
